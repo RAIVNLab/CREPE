@@ -17,7 +17,7 @@ with your own model checkpoint directory path in `crepe_compo_eval_open_clip.py`
 To evaluate all models reported in our paper, simply run:
 
 ```
-python -m crepe_compo_eval_open_clip --compo-type=<compositionality_type> --hard-neg-type=<negative_type> --input-dir=<path_to_crepe/crepe/syst_hard_negatives>  --output-dir=<log_directory>
+python -m crepe_compo_eval_open_clip --compo-type <compositionality_type> --hard-neg-type <negative_type> --input-dir <path_to_crepe/crepe/syst_hard_negatives>  --output-dir <log_directory>
 ```
 
 where the valid compositionality types are `systematicity` and `productivity`. The valid negative types are `atom` and `comp` for systematicity, and `atom`, `swap` and `negate` for productivity.
