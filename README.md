@@ -13,7 +13,7 @@ the official OpenAI CLIP models, CyCLIP, FLAVA and ALBEF on compositional reason
 
 ## Evaluation instructions
 In `crepe_eval_utils.py`, you can find common evaluation util functions, and you will need to replace `vg_image_paths` 
-with the path to Visual Genome images on your machine.
+with the path to Visual Genome images on your machine. The VG images can be downloaded (here)[https://drive.google.com/drive/folders/11dMtJByk7zmbQjV47PXVwfmakN3Gr5Ic?usp=share_link].
 
 We evaluated all models on an NVIDIA TITAN X GPU with a CUDA version of 11.4.
 
