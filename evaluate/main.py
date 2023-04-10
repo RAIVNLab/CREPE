@@ -42,11 +42,11 @@ def evaluate(model, data, epoch, args):
             
             if one2many:
                 image_features = model(images, None)
-                all_text_features = []
+                image_features /= image_features.norm(dim = -1, keepdim = True)
                 for text in texts:
                     text_features = model(None, text)
-                    all_text_features.append(text_features)
-                rank = get_one2many_rank(image_features, torch.cat(all_text_features), model.logit_scale.exp().mean().cpu())
+                    text_features /= text_features.norm(dim = -1, keepdim = True)
+                rank = get_one2many_rank(image_features, text_features, model.logit_scale.exp().mean().cpu())
                 all_ranks.append(rank)
             else:
                 with autocast():
