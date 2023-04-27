@@ -57,7 +57,7 @@ model checkpoint under the folder `cyclip.pt` (accessible from the bottom of the
 repository's README). To evaluate models, simply run:
 
 ```
-python -m crepe_prod_eval_cyclip --hard-neg-typess <negative_type> --output-dir <log_directory>
+python -m crepe_prod_eval_cyclip --hard-neg-types <negative_type> --output-dir <log_directory>
 ```
 
 #### FLAVA-specific instructions
@@ -65,7 +65,7 @@ Clone the FLAVA repository [here](https://github.com/facebookresearch/multimodal
 and `crepe_eval_utils.py` into the folder `examples/flava/`. To evaluate models, simply run:
 
 ```
-python -m crepe_prod_eval_flava --hard-neg-typess <negative_type> --output-dir <log_directory>
+python -m crepe_prod_eval_flava --hard-neg-types <negative_type> --output-dir <log_directory>
 ```
 
 #### ALBEF-specific instructions
@@ -74,7 +74,7 @@ copy `crepe_prod_eval_albef.py` and `crepe_eval_utils.py` to the top level of th
 and download the pretrained checkpoint marked '14M' from the repository. To evaluate models, simply run:
 
 ```
-python -m crepe_prod_eval_albef --hard-neg-typess <negative_type> --output-dir <log_directory>
+python -m crepe_prod_eval_albef --hard-neg-types <negative_type> --output-dir <log_directory>
 ```
 
 ## Citation
