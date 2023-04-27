@@ -124,7 +124,7 @@ def evaluate(model, data, args):
                     all_text_features.append(text_features.cpu())
 
         if one2many:
-            val_metrics = get_one2many_metrics(np.array(all_ranks), arg=args)
+            val_metrics = get_one2many_metrics(np.array(all_ranks))
             metrics.update(
                 {**val_metrics}
             )
