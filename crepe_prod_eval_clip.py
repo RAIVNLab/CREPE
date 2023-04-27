@@ -1,7 +1,7 @@
 import logging
 import os
 from time import time
-import pickle
+import json
 
 import torch
 import torchvision.transforms.functional as TF
@@ -26,7 +26,7 @@ def collator(batch):
 ### DATASET CONSTRUCTION
 
 class CsvDataset(BaseCsvDataset):
-    def __init__(self, input_filename, args, processor):
+    def __init__(self, input_filename, args, processor, device):
         super().__init__(input_filename, args)
 
         self.processor = processor
@@ -51,7 +51,8 @@ def get_data(args, retrieval_data_path, processor, device):
     dataset = CsvDataset(
         input_filename,
         args,
-        processor)
+        processor,
+        device)
     num_samples = len(dataset)
     sampler = None
     shuffle=False
@@ -73,15 +74,15 @@ def get_data(args, retrieval_data_path, processor, device):
 
 ### EVALUATION
 
-def evaluate(model, data, complexity, negative_type, output_path, device):
+def evaluate(model, data, complexity, negative_type, device):
     metrics = {}
 
     dataloader = data.dataloader
-    num_samples = 0
-    samples_per_val = dataloader.num_samples
+    # num_samples = 0
+    # samples_per_val = dataloader.num_samples
 
-    cumulative_loss = 0.0
-    all_image_features, all_text_features = [], []
+    # cumulative_loss = 0.0
+    # all_image_features, all_text_features = [], []
     one2many = dataloader.dataset.one2many
 
     if one2many:
@@ -100,9 +101,10 @@ def evaluate(model, data, complexity, negative_type, output_path, device):
                 text_emb = model.encode_text(texts)
                 text_emb /= text_emb.norm(dim = -1, keepdim = True)
 
+                set_size = text_emb.shape[0] // image_emb.shape[0]
                 for j in range(image_emb.shape[0]):
                     curr_image_emb = image_emb[j:j+1, :]
-                    curr_text_emb = text_emb[j*6:(j+1)*6, :]
+                    curr_text_emb = text_emb[j*set_size:(j+1)*set_size, :]
                     rank = get_one2many_rank(curr_image_emb, curr_text_emb)
                     all_ranks.append(rank)
 
@@ -115,48 +117,48 @@ def evaluate(model, data, complexity, negative_type, output_path, device):
         "\t".join([f"{k}: {round(v, 4):.4f}" for k, v in metrics.items()])
     )
 
-    # Dump metrics as pickle file
-    try:
-        with open(output_path, 'wb') as f:
-            pickle.dump(metrics, f)
-    except Exception as e:
-        raise(e)
-
     return metrics
 
 def main():
     args = setup_args()
-    output_dir = os.path.join(args.output_dir, 'open_ai_clip')
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    if args.output_dir:
+        output_dir = os.path.join(args.output_dir, 'open_ai_clip')
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
     # Load the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model, preprocess = clip.load(name = args.model_name, device=device)
     model = model.to(device)
     model.eval()
 
-    # Iterate over each complexity
-    for i in range(4, 13):
-        print('\n' + '*' * 45  + f' Evaluating on complexity {i} ' + '*' * 45  + '\n')
-        start_time = time()
-        retrieval_data_path = os.path.join(args.input_dir, f'{args.hard_neg_type}/prod_vg_hard_negs_{args.hard_neg_type}_complexity_{i}.csv')
+    for hard_neg_type in args.hard_neg_types:
+        all_metrics = {}
+        # Iterate over each complexity
+        for i in range(4, 13):
+            print('\n' + '*' * 45  + f' Evaluating on complexity {i} ' + '*' * 45  + '\n')
+            start_time = time()
+            retrieval_data_path = os.path.join(args.input_dir, f'{hard_neg_type}/prod_vg_hard_negs_{hard_neg_type}_complexity_{i}.csv')
 
-        if args.model_name == "RN50" or args.model_name == "RN101":
-            model_save_name = args.model_name
-        elif args.model_name == "ViT-B/32":
-            model_save_name = 'vit_b32'
-        elif args.model_name == "ViT-B/16":
-            model_save_name = 'vit_b16'
-        elif args.model_name == "ViT-L/14":
-            model_save_name = 'vit_l14'
+            if args.model_name == "RN50" or args.model_name == "RN101":
+                model_save_name = args.model_name
+            elif args.model_name == "ViT-B/32":
+                model_save_name = 'vit_b32'
+            elif args.model_name == "ViT-B/16":
+                model_save_name = 'vit_b16'
+            elif args.model_name == "ViT-L/14":
+                model_save_name = 'vit_l14'
 
-        output_file = f'open_ai_clip_{model_save_name}_complexity_{i}_metrics_{args.hard_neg_type}_neg.pkl'
-        output_path = os.path.join(output_dir, output_file)
+            data = get_data(args, retrieval_data_path, preprocess, device)
+            metrics = evaluate(model, data, i, hard_neg_type, device)
 
-        data = get_data(args, retrieval_data_path, preprocess, device)
-        evaluate(model, data, i, args.negative_type, output_path, device)
+            print(f'Complexity {i} took {time() - start_time} seconds')
+            all_metrics[i] = metrics
 
-        print(f'Complexity {i} took {time() - start_time} seconds')
+        if args.output_dir:
+            output = os.path.join(output_dir, f'productivity_clip_{model_save_name}_{hard_neg_type}_metrics.json')
+            print("saving results to:", output)
+            with open(output, 'w') as f:
+                json.dump(all_metrics, f)
 
 if __name__ == '__main__':
     main()
